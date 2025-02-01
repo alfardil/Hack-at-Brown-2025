@@ -40,3 +40,33 @@
 .read-the-docs {
   color: #888;
 }
+
+.arcade-font {
+  font-family: "Press Start 2P", cursive;
+  font-size: 2rem;
+  margin-top: 20px;
+}
+
+.yarn-container {
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+}
+
+.yarn-ball {
+  width: 80px;
+  height: 80px;
+  background-color: #ff6f61;
+  border-radius: 50%;
+  position: relative;
+  animation: roll 2s infinite linear;
+}
+
+@keyframes roll {
+  0% {
+    transform: translateX(-50px) rotate(0deg);
+  }
+  100% {
+    transform: translateX(50px) rotate(360deg);
+  }
+}
