@@ -9,59 +9,53 @@ interface RoomData {
 const RoomPage: React.FC = () => {
   const { code } = useParams<{ code: string }>();
   const [roomData, setRoomData] = useState<RoomData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchRoomData = async () => {
-      if (!code) return;
+  const fetchRoomData = async () => {
+    if (!code) return;
 
-      try {
-        const response = await fetch(`/api/lobby/${code}`);
-        if (!response.ok) {
-          const errData = await response.json();
-          setError(errData.error || "Could not find room");
-          setLoading(false);
-          return;
-        }
-        const data = await response.json();
-        setRoomData(data);
-      } catch (err) {
-        console.error(err);
-        setError("Something went wrong");
-      } finally {
-        setLoading(false);
+    try {
+      const response = await fetch(`/api/lobby/${code}`);
+      if (!response.ok) {
+        const errData = await response.json();
+        setError(errData.error || "Could not find room");
+        return;
       }
-    };
+      const data = await response.json();
+      setRoomData(data);
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong");
+    }
+  };
 
-    fetchRoomData();
+  useEffect(() => {
+    fetchRoomData(); // Initial fetch
+
+    // Start interval to fetch data every 3 seconds
+    const interval = setInterval(fetchRoomData, 3000);
+
+    return () => clearInterval(interval);
   }, [code]);
 
-  if (loading) {
-    return <div>Loading room data...</div>;
-  }
-
-  if (error) {
-    return <div style={{ color: "red" }}>{error}</div>;
-  }
-
-  if (!roomData) {
-    return <div>No data for this room</div>;
-  }
-
-  // Example: if players < 2, show waiting. If players = 2, show "ready to start" or game screen
   return (
     <div style={{ textAlign: "center", padding: "2rem" }}>
       <h2>Room: {code}</h2>
-      <p>Players: {roomData.players}</p>
+      {error && <div style={{ color: "red" }}>{error}</div>}
 
-      {roomData.players < 2 ? (
-        <p>Waiting for a second player to join...</p>
+      {roomData ? (
+        <>
+          <p>Players: {roomData.players}</p>
+          {roomData.players < 2 ? (
+            <p>Waiting for a second player to join...</p>
+          ) : (
+            <p>Both players have joined!</p>
+          )}
+          {roomData.prompt && <p>Debate Prompt: {roomData.prompt}</p>}
+        </>
       ) : (
-        <p>Both players have joined!</p>
+        <p>Loading room data...</p>
       )}
-
-      {roomData.prompt && <p>Debate Prompt: {roomData.prompt}</p>}
     </div>
   );
 };
