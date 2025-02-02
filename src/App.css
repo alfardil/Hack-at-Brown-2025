@@ -588,3 +588,163 @@ body {
     font-size: 0.9rem;
   }
 }
+
+/* Room Page Styles */
+.room-card {
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.room-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.status-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.status-item {
+  text-align: center;
+}
+
+.status-label {
+  font-family: "Press Start 2P", cursive;
+  font-size: 0.6rem;
+  color: var(--accent-purple);
+  margin-bottom: 0.5rem;
+}
+
+.status-value {
+  font-family: "Chakra Petch", monospace;
+  font-size: 2rem;
+  color: white;
+  text-shadow: 0 0 10px rgba(151, 71, 255, 0.5);
+}
+
+.status-message {
+  font-family: "Press Start 2P", cursive;
+  font-size: 0.7rem;
+  color: #888;
+  margin-bottom: 1rem;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-purple);
+  border-radius: 50%;
+  animation: loadingDots 1.4s infinite ease-in-out;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.joke-box {
+  background: rgba(151, 71, 255, 0.1);
+  border: 1px solid rgba(151, 71, 255, 0.2);
+  border-radius: 4px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.joke-title {
+  font-family: "Press Start 2P", cursive;
+  font-size: 0.6rem;
+  color: var(--accent-purple);
+  margin-bottom: 0.75rem;
+}
+
+.joke-content {
+  font-family: "Chakra Petch", monospace;
+  font-size: 0.9rem;
+  color: #fff;
+  line-height: 1.4;
+}
+
+.countdown-section {
+  text-align: center;
+}
+
+.countdown-display {
+  font-family: "Press Start 2P", cursive;
+  font-size: 3rem;
+  color: var(--accent-purple);
+  animation: countdownPulse 1s infinite;
+}
+
+.prompt-section {
+  border-top: 1px solid rgba(151, 71, 255, 0.2);
+  padding-top: 1.5rem;
+  margin-top: 1rem;
+}
+
+.prompt-title {
+  font-family: "Press Start 2P", cursive;
+  font-size: 0.6rem;
+  color: var(--accent-purple);
+  margin-bottom: 0.75rem;
+}
+
+.prompt-content {
+  font-family: "Chakra Petch", monospace;
+  font-size: 0.9rem;
+  color: #fff;
+  line-height: 1.4;
+}
+
+.error-message {
+  color: #ff4444;
+  font-family: "Chakra Petch", monospace;
+  text-align: center;
+  padding: 1rem;
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 4px;
+}
+
+.loading-message {
+  font-family: "Press Start 2P", cursive;
+  font-size: 0.7rem;
+  color: #888;
+  text-align: center;
+}
+
+@keyframes loadingDots {
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+@keyframes countdownPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}

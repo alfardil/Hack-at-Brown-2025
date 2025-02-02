@@ -59,7 +59,7 @@ const RoomPage: React.FC = () => {
     fetchJoke();
 
     const roomInterval = setInterval(fetchRoomData, 3000);
-    const jokeInterval = setInterval(fetchJoke, 10000);
+    const jokeInterval = setInterval(fetchJoke, 25000);
 
     return () => {
       clearInterval(roomInterval);
@@ -117,36 +117,70 @@ const RoomPage: React.FC = () => {
   }, [isCountdownActive, countdown, roomData, code, navigate]);
 
   return (
-    <div style={{ textAlign: "center", padding: "2rem" }}>
-      <h2>Room: {code}</h2>
-      {error && <div style={{ color: "red" }}>{error}</div>}
-      {roomData ? (
-        <>
-          <p>Players: {roomData.players}</p>
-          {roomData.players < 2 ? (
-            <>
-              <p>Waiting for a second player to join...</p>
-              <h3>🤖 AI Joke:</h3>
-              <p>{joke || "Loading a joke..."}</p>
-            </>
-          ) : (
-            <>
-              {!gameStarted && (
-                <>
-                  <p>Both players have joined!</p>
-                  <p>
-                    Game starts in: {countdown !== null ? countdown : "..."}{" "}
-                    seconds
-                  </p>
-                </>
+    <div className="game-container">
+      <div className="game-background">
+        <div className="bg-grid"></div>
+        <div className="bg-overlay"></div>
+      </div>
+
+      <div className="game-card room-card">
+        <div className="card-header">
+          <div className="menu-title">COURTROOM {code}</div>
+          <div className="menu-divider">
+            <div className="divider-line"></div>
+            <div className="divider-diamond"></div>
+            <div className="divider-line"></div>
+          </div>
+        </div>
+
+        {error ? (
+          <div className="error-message">{error}</div>
+        ) : roomData ? (
+          <div className="room-content">
+            <div className="status-display">
+              <div className="status-item">
+                <div className="status-label">PLAYERS PRESENT</div>
+                <div className="status-value">{roomData.players}/2</div>
+              </div>
+
+              {roomData.players < 2 ? (
+                <div className="waiting-section">
+                  <div className="status-message">AWAITING OPPONENT</div>
+                  <div className="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <div className="joke-box">
+                    <div className="joke-title">Wisdom:</div>
+                    <div className="joke-content">
+                      {joke || "Loading wisdom..."}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                !gameStarted && (
+                  <div className="countdown-section">
+                    <div className="status-message">COURT IN SESSION</div>
+                    <div className="countdown-display">
+                      {countdown !== null ? countdown : "..."}
+                    </div>
+                  </div>
+                )
               )}
-            </>
-          )}
-          {roomData.prompt && <p>Debate Prompt: {roomData.prompt}</p>}
-        </>
-      ) : (
-        <p>Loading room data...</p>
-      )}
+            </div>
+
+            {roomData.prompt && (
+              <div className="prompt-section">
+                <div className="prompt-title">CASE BRIEF</div>
+                <div className="prompt-content">{roomData.prompt}</div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="loading-message">SUMMONING COURT DATA...</div>
+        )}
+      </div>
     </div>
   );
 };
