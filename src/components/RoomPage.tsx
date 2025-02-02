@@ -1,149 +1,131 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { chatClient } from "../config/openaiConfig";
-
-interface RoomData {
-  players: number;
-  prompt?: string;
-  playerIds?: string[];
-  gameId?: string;
-}
+import { GAME_PHASES } from "../config/constants";
+import { getRandomQuestion } from "../config/debateQuestions";
+import { useGame } from "../context/GameContext";
+import { GameState } from "../types/game";
 
 const RoomPage: React.FC = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-
-  const [roomData, setRoomData] = useState<RoomData | null>(null);
+  const { setGameState } = useGame();
+  const [roomData, setRoomData] = useState<any>(null);
   const [error, setError] = useState("");
-  const [joke, setJoke] = useState<string>("");
-
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const [isCountdownActive, setIsCountdownActive] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
-
-  const fetchRoomData = async () => {
-    if (!code) return;
-    try {
-      const response = await fetch(`https://hack-at-brown-2025.onrender.com/api/lobby/${code}`);
-      
-      if (!response.ok) {
-        const errData = await response.json();
-        setError(errData.error || "Could not find room");
-        return;
-      }
-
-      const data = await response.json();
-      setRoomData(data);
-    } catch (err) {
-      console.error("❌ Error fetching room data:", err);
-      setError("Something went wrong while fetching the room.");
-    }
-  };
-
-  const fetchJoke = async () => {
-    try {
-      const response = await chatClient.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: "Tell me a short joke!" }],
-        max_tokens: 50,
-      });
-
-      if (response.choices && response.choices[0].message.content) {
-        setJoke(response.choices[0].message.content.trim());
-      }
-    } catch (error) {
-      console.error("Error fetching joke:", error);
-      setJoke("Couldn't fetch a joke. Try again later!");
-    }
-  };
+  const [question] = useState(getRandomQuestion());
 
   useEffect(() => {
-    fetchRoomData();
-    fetchJoke();
+    const fetchRoomData = async () => {
+      if (!code) return;
+      try {
+        const response = await fetch(`https://hack-at-brown-2025.onrender.com/api/lobby/${code}`);
+        
+        if (!response.ok) {
+          const errData = await response.json();
+          setError(errData.error || "Could not find room");
+          return;
+        }
 
-    const roomInterval = setInterval(fetchRoomData, 3000);
-    const jokeInterval = setInterval(fetchJoke, 10000);
+        const data = await response.json();
+        setRoomData(data);
+        console.log("Room data:", data);
 
-    return () => {
-      clearInterval(roomInterval);
-      clearInterval(jokeInterval);
-    };
-  }, [code]);
+        // If both players are present, initialize game state
+        if (data.players >= 2 && !data.gameStarted) {
+          console.log("Initializing game...");
+          const gameState: GameState = {
+            playerIds: ["player1", "player2"],
+            turn: 0,
+            turnDeadline: new Date(Date.now() + 60000).toISOString(),
+            prompt: question,
+            gamePhase: GAME_PHASES.INTRO,
+            positions: {
+              "player1": 'pro',
+              "player2": 'con'
+            },
+            responses: {
+              opening: { pro: null, con: null },
+              rebuttal: { pro: null, con: null },
+              closing: { pro: null, con: null }
+            }
+          };
 
-  useEffect(() => {
-    if (roomData && roomData.players >= 2 && !isCountdownActive && !gameStarted) {
-      setCountdown(5);
-      setIsCountdownActive(true);
-    }
-  }, [roomData, isCountdownActive, gameStarted]);
+          console.log("Game state:", gameState);
 
-  useEffect(() => {
-    if (!isCountdownActive || countdown === null) return;
-
-    const intervalId = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev === null) return null;
-        if (prev <= 1) {
-          clearInterval(intervalId);
-          setGameStarted(true);
-
-          if (roomData && roomData.gameId) {
-            navigate(`/game/${roomData.gameId}`);
-          } else if (roomData) {
-            fetch(`https://hack-at-brown-2025.onrender.com/api/lobby/${code}/startGame`, {
+          const startGameResponse = await fetch(
+            `https://hack-at-brown-2025.onrender.com/api/lobby/${code}/startGame`,
+            {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ playerIds: roomData.playerIds }),
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                navigate(`/game/${data.gameId}`);
-              })
-              .catch((err) => {
-                console.error("❌ Error starting game:", err);
-                setError("Failed to start the game.");
-              });
+              body: JSON.stringify({ gameState })
+            }
+          );
+
+          if (startGameResponse.ok) {
+            const { gameId } = await startGameResponse.json();
+            console.log("Game created with ID:", gameId);
+            setGameState(gameState);
+            navigate(`/game/${gameId}`);
+          } else {
+            const errorText = await startGameResponse.text();
+            console.error("Failed to start game:", errorText);
+            setError(`Failed to start game: ${errorText}`);
           }
-
-          return 0;
         }
-        return prev - 1;
-      });
-    }, 1000);
+      } catch (err) {
+        console.error("Error:", err);
+        setError("Something went wrong");
+      }
+    };
 
-    return () => clearInterval(intervalId);
-  }, [isCountdownActive, countdown, roomData, code, navigate]);
+    const interval = setInterval(fetchRoomData, 1000);
+    fetchRoomData();
+
+    return () => clearInterval(interval);
+  }, [code, navigate, setGameState, question]);
 
   return (
-    <div style={{ textAlign: "center", padding: "2rem" }}>
-      <h2>Room: {code}</h2>
-      {error && <div style={{ color: "red" }}>{error}</div>}
-      {roomData ? (
-        <>
-          <p>Players: {roomData.players}</p>
-          {roomData.players < 2 ? (
-            <>
-              <p>Waiting for a second player to join...</p>
-              <h3>🤖 AI Joke:</h3>
-              <p>{joke || "Loading a joke..."}</p>
-            </>
+    <div className="game-container">
+      <div className="game-background">
+        <div className="bg-grid"></div>
+        <div className="bg-overlay"></div>
+      </div>
+
+      <div className="game-card">
+        <div className="card-header">
+          <div className="menu-title">WAITING ROOM</div>
+          <div className="menu-divider">
+            <div className="divider-line"></div>
+            <div className="divider-diamond"></div>
+            <div className="divider-line"></div>
+          </div>
+        </div>
+
+        <div className="room-content">
+          {error ? (
+            <div className="error-message">{error}</div>
           ) : (
             <>
-              {!gameStarted && (
-                <>
-                  <p>Both players have joined!</p>
-                  <p>
-                    Game starts in: {countdown !== null ? countdown : "..."} seconds
-                  </p>
-                </>
+              <div className="status-item">
+                <div className="status-label">ROOM CODE</div>
+                <div className="status-value">{code}</div>
+              </div>
+              
+              <div className="status-item">
+                <div className="status-label">PLAYERS</div>
+                <div className="status-value">
+                  {roomData ? `${roomData.players}/2` : "..."}
+                </div>
+              </div>
+
+              {roomData?.players < 2 && (
+                <div className="status-message">
+                  Waiting for opponent to join...
+                </div>
               )}
             </>
           )}
-          {roomData.prompt && <p>Debate Prompt: {roomData.prompt}</p>}
-        </>
-      ) : (
-        <p>Loading room data...</p>
-      )}
+        </div>
+      </div>
     </div>
   );
 };

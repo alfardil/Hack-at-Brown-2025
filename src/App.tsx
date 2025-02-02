@@ -3,8 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import GamePage from "./components/GamePage";
 import Lobby from "./components/Lobby";
 import RoomPage from "./components/RoomPage";
-import SplashScreen from "./components/SplashScreen";
 import { chatClient } from "./config/openaiConfig";
+import { GameProvider } from './context/GameContext';
 
 const App: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -36,23 +36,17 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <>
-      {showSplash ? (
-        <SplashScreen />
-      ) : (
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Lobby />} />
-            <Route path="/lobby/:code" element={<RoomPage />} />
-            <Route path="/game/:gameId" element={<GamePage />} />
-          </Routes>
-        </BrowserRouter>
-      )}
-    </>
+    <BrowserRouter>
+      <GameProvider>
+        <Routes>
+          <Route path="/" element={<Lobby />} />
+          <Route path="/lobby/:code" element={<RoomPage />} />
+          <Route path="/game/:gameId" element={<GamePage />} />
+        </Routes>
+      </GameProvider>
+    </BrowserRouter>
   );
 };
 
 export default App;
-
-fetch(`$https://hack-at-brown-2025.onrender.com`); // ✅ CORRECT: Uses Render backend
 
