@@ -748,3 +748,88 @@ body {
     opacity: 0.8;
   }
 }
+
+/* Join Room Styles */
+.join-card {
+  min-height: 300px;
+}
+
+.join-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+}
+
+.input-container {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+}
+
+.court-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(151, 71, 255, 0.3);
+  color: white;
+  font-family: "Press Start 2P", cursive;
+  font-size: 1.5rem;
+  text-align: center;
+  letter-spacing: 8px;
+  padding: 0.5rem 0;
+  transition: all 0.3s ease;
+}
+
+.court-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 4px;
+}
+
+.court-input:focus {
+  outline: none;
+  border-bottom-color: var(--accent-purple);
+}
+
+.input-line {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--accent-purple);
+  transform: translateX(-50%);
+  transition: width 0.3s ease;
+}
+
+.court-input:focus + .input-line {
+  width: 100%;
+}
+
+/* Glowing effect on input focus */
+.court-input:focus {
+  text-shadow: 0 0 8px rgba(151, 71, 255, 0.5);
+}
+
+/* Error message animation */
+.error-message {
+  animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .court-input {
+    font-size: 1.2rem;
+    letter-spacing: 6px;
+  }
+  
+  .join-card {
+    min-height: 250px;
+  }
+}

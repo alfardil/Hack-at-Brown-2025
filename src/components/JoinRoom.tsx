@@ -40,18 +40,46 @@ const JoinRoom: React.FC<JoinRoomProps> = ({ onRoomJoined }) => {
   };
 
   return (
-    <div style={{ padding: "2rem", textAlign: "center" }}>
-      <h2>Join a Room</h2>
-      <input
-        type="text"
-        value={joinCode}
-        onChange={(e) => setJoinCode(e.target.value)}
-        placeholder="Enter 5-digit code"
-      />
-      <button onClick={handleJoin} style={{ marginLeft: "1rem" }}>
-        Join
-      </button>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <div className="game-container">
+      <div className="game-background">
+        <div className="bg-grid"></div>
+        <div className="bg-overlay"></div>
+      </div>
+
+      <div className="game-card join-card">
+        <div className="card-header">
+          <div className="menu-title">ENTER COURT CODE</div>
+          <div className="menu-divider">
+            <div className="divider-line"></div>
+            <div className="divider-diamond"></div>
+            <div className="divider-line"></div>
+          </div>
+        </div>
+
+        <div className="join-content">
+          <div className="input-container">
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              placeholder="XXXXX"
+              className="court-input"
+              maxLength={5}
+            />
+            <div className="input-line"></div>
+          </div>
+
+          <button className="menu-button primary" onClick={handleJoin}>
+            <div className="button-content">
+              <div className="button-diamond"></div>
+              <span className="button-text">ENTER COURT</span>
+            </div>
+            <div className="button-glow"></div>
+          </button>
+
+          {error && <div className="error-message">{error}</div>}
+        </div>
+      </div>
     </div>
   );
 };
