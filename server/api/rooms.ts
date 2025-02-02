@@ -1,29 +1,55 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import Lobby, { ILobby, IDebateMessage } from '../models/Lobby';
-import OpenAI from 'openai';
+import { type DebateMessage, type Lobby} from '../models/Lobby';
+// import OpenAI from 'openai';
+import { db } from '../lib/db';
 
-const router = Router();
+const lobbyRouter = Router();
 
-const openai = new OpenAI({
-  apiKey: process.env.AZURE_OPENAI_API_KEY, 
-  baseURL: process.env.AZURE_OPENAI_ENDPOINT, 
-  defaultQuery: { "api-version": "2024-08-01-preview" }, 
-});
+// const openai = new OpenAI({
+//   apiKey: process.env.AZURE_OPENAI_API_KEY, 
+//   baseURL: process.env.AZURE_OPENAI_ENDPOINT, 
+//   defaultQuery: { "api-version": "2024-08-01-preview" }, 
+// });
 
 /**
  * POST /api/lobby/create
  * Creates a new lobby with a 5-digit code. Players = 1.
  */
-router.post(
+lobbyRouter.post(
   '/create',
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req, res, next) => {
     try {
       const code = Math.floor(10000 + Math.random() * 90000).toString();
-      const newLobby: ILobby = new Lobby({ code });
-      await newLobby.save();
+
+        const newLobby: Lobby = {
+            code,
+            players: 1,
+            messages: [],
+            createdAt: new Date(),
+            prompt: null,
+        };
+
+        await db.collection('Rooms').insertOne(newLobby);
+
       res.status(201).json({ code });
     } catch (error) {
       console.error('Error creating lobby:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/lobby/test
+ * Test endpoint.
+ */
+lobbyRouter.get(
+  "/test",
+  async (req, res, next) => {
+    try {
+      res.status(200).json({ message: "Hello World!" });
+    } catch (error) {
+      console.error("Error creating lobby:", error);
       next(error);
     }
   }
@@ -34,12 +60,12 @@ router.post(
  * Body: { code }
  * Joins an existing lobby if players < 2.
  */
-router.post(
+lobbyRouter.post(
   '/join',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { code } = req.body;
     try {
-      const lobby = await Lobby.findOne({ code });
+      const lobby = await db.collection("Rooms").findOne<Lobby>({ code });
       if (!lobby) {
         res.status(404).json({ error: 'Lobby not found.' });
         return;
@@ -49,8 +75,10 @@ router.post(
         return;
       }
 
-      lobby.players++;
-      await lobby.save();
+      await db.collection("Rooms").updateOne(
+        {code},
+        { $inc: { players: 1 } }
+      );
 
       res.status(200).json({ code: lobby.code });
     } catch (error) {
@@ -65,12 +93,12 @@ router.post(
  * Body: { code }
  * Calls Azure OpenAI to get a kid-friendly debate prompt, saves it in the lobby.
  */
-router.post(
+lobbyRouter.post(
   '/startDebate',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { code } = req.body;
     try {
-      const lobby = await Lobby.findOne({ code });
+      const lobby = await db.collection("Rooms").findOne<Lobby>({ code });
       if (!lobby) {
         res.status(404).json({ error: 'Lobby not found.' });
         return;
@@ -87,25 +115,28 @@ router.post(
         return;
       }
 
-      const openaiRes = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that generates short, kid-friendly debate topics.'
-          },
-          {
-            role: 'user',
-            content: 'Give me a short one-sentence debate topic suitable for children to discuss.'
-          }
-        ],
-        max_tokens: 60,
-        temperature: 0.7
-      });
+    //   const openaiRes = await openai.chat.completions.create({
+    //     model: "gpt-35-turbo",
+    //     messages: [
+    //       {
+    //         role: 'system',
+    //         content: 'You are a helpful assistant that generates short, kid-friendly debate topics.'
+    //       },
+    //       {
+    //         role: 'user',
+    //         content: 'Give me a short one-sentence debate topic suitable for children to discuss.'
+    //       }
+    //     ],
+    //     max_tokens: 60,
+    //     temperature: 0.7
+    //   });
 
-      const promptText = openaiRes.choices[0]?.message?.content?.trim() || 'N/A';
-      lobby.prompt = promptText;
-      await lobby.save();
+    //   const promptText = openaiRes.choices[0]?.message?.content?.trim() || 'N/A';
+        const promptText = "Should schools have uniforms?";
+      await db.collection("Rooms").updateOne(
+        {code},
+        { $set: { prompt: promptText } }
+      );
 
       res.status(200).json({ prompt: promptText });
     } catch (error) {
@@ -120,24 +151,28 @@ router.post(
  * Body: { code, userId, text }
  * Adds a new debate message to the lobby.
  */
-router.post(
+lobbyRouter.post(
   '/addMessage',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { code, userId, text } = req.body;
     try {
-      const lobby = await Lobby.findOne({ code });
+        const lobby = await db.collection("Rooms").findOne<Lobby>({ code });
+        const Rooms = db.collection<Lobby>("Rooms");
       if (!lobby) {
         res.status(404).json({ error: 'Lobby not found.' });
         return;
       }
 
-      const newMsg: IDebateMessage = {
+      const newMsg: DebateMessage = {
         userId,
         text,
         timestamp: new Date()
       };
-      lobby.messages.push(newMsg);
-      await lobby.save();
+      
+      await Rooms.updateOne(
+        {code},
+        { $push: { messages: newMsg } }
+      )
 
       res.status(200).json({ success: true });
     } catch (error) {
@@ -151,12 +186,13 @@ router.post(
  * GET /api/lobby/:code
  * Returns the state of the lobby (players, prompt, messages).
  */
-router.get(
+
+lobbyRouter.get(
   '/:code',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { code } = req.params;
     try {
-      const lobby = await Lobby.findOne({ code });
+      const lobby = await db.collection("Rooms").findOne<Lobby>({ code });
       if (!lobby) {
         res.status(404).json({ error: 'Lobby not found.' });
         return;
@@ -176,4 +212,4 @@ router.get(
   }
 );
 
-export default router;
+export default lobbyRouter;

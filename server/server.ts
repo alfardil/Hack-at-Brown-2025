@@ -1,21 +1,32 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import lobbyRoutes from './routes/lobbyRoutes';
+import { apiRouter } from './api';
+import morgan from 'morgan';
 
-dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 5173;
+const port = 3000;
 
 app.use(express.json());
 app.use(cors());
+app.use(morgan("tiny"));
 
-app.use('/api/rooms', lobbyRoutes);
+app.use('/api', apiRouter);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Server is running');
 });
 
-const mongoURI = process.env.MONGO_URI!;
+const server = app.listen(port);
+
+try {
+  const serverMetadata = server.address() as { address: string; port: number };
+  console.log(
+    `\n\nServer listening on http://${
+      serverMetadata.address === "::" ? "127.0.0.1" : serverMetadata.address
+    }:${serverMetadata.port}`
+  );
+} catch (e) {
+  console.error(e);
+}

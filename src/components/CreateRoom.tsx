@@ -11,7 +11,7 @@ const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
   useEffect(() => {
     const createRoom = async () => {
       try {
-        const response = await fetch("/api/rooms/create", {
+        const response = await fetch("/api/lobby/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
