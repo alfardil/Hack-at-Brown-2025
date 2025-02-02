@@ -17,7 +17,7 @@ const JoinRoom: React.FC<JoinRoomProps> = ({ onRoomJoined }) => {
     }
 
     try {
-      const response = await fetch("api/rooms/join", {
+      const response = await fetch("api/lobby/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: joinCode.trim() }),
@@ -32,7 +32,7 @@ const JoinRoom: React.FC<JoinRoomProps> = ({ onRoomJoined }) => {
       if (onRoomJoined) {
         onRoomJoined(data.code);
       }
-      navigate(`/room/${data.code}`);
+      navigate(`/lobby/${data.code}`);
     } catch (err) {
       console.error(err);
       setError("Something went wrong");

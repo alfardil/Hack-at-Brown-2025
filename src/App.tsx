@@ -23,7 +23,7 @@ const App: React.FC = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Lobby />} />
-            <Route path="/room/:code" element={<RoomPage />} />
+            <Route path="/lobby/:code" element={<RoomPage />} />
           </Routes>
         </BrowserRouter>
       )}

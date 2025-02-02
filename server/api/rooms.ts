@@ -32,6 +32,7 @@ lobbyRouter.post(
         await db.collection('Rooms').insertOne(newLobby);
 
       res.status(201).json({ code });
+      console.log('Created lobby:', code);
     } catch (error) {
       console.error('Error creating lobby:', error);
       next(error);

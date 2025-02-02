@@ -17,7 +17,7 @@ const RoomPage: React.FC = () => {
       if (!code) return;
 
       try {
-        const response = await fetch(`/api/rooms/${code}`);
+        const response = await fetch(`/api/lobby/${code}`);
         if (!response.ok) {
           const errData = await response.json();
           setError(errData.error || "Could not find room");

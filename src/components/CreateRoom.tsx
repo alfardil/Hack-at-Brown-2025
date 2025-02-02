@@ -23,7 +23,7 @@ const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
           onRoomCreated(data.code);
         }
 
-        navigate(`/room/${data.code}`);
+        navigate(`/lobby/${data.code}`);
       } catch (error) {
         console.error(error);
       }
