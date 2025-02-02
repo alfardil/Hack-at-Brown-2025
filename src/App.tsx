@@ -4,6 +4,7 @@ import Lobby from "./components/Lobby";
 import RoomPage from "./components/RoomPage";
 import SplashScreen from "./components/SplashScreen";
 import { chatClient } from "./config/openaiConfig";
+import GamePage from "./components/GamePage";
 
 const App: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -43,6 +44,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Lobby />} />
             <Route path="/lobby/:code" element={<RoomPage />} />
+            <Route path="/game/:gameId" element={<GamePage />} />
           </Routes>
         </BrowserRouter>
       )}

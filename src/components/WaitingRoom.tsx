@@ -49,7 +49,7 @@ const RoomPage: React.FC = () => {
     }
   };
 
-  const [refresh, setRefresh] = useState(0);
+  const [, setRefresh] = useState(0);
 
   useEffect(() => {
     fetchRoomData();
