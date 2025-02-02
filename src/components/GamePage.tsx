@@ -181,16 +181,18 @@ const GamePage: React.FC = () => {
           
           const gameData = await stateRes.json();
           if (gameData.responses) {
-            const opponent = Object.values(gameData.responses).find(
-              (r: any) => r.playerId !== playerId
-            );
-            if (opponent) {
-              clearInterval(checkOpponent);
-              setOpponentScore(opponent.score);
-              setOpponentTranscript(opponent.transcript);
-              setIsWaitingForOpponent(false);
-              setShowResults(true);
-            }
+            // In the checkOpponent interval:
+const opponent = Object.values(gameData.responses).find(
+  (r: any) => r.playerId !== playerId
+) as { score: number; transcript: string } | undefined;
+
+if (opponent) {
+  clearInterval(checkOpponent);
+  setOpponentScore(opponent.score);
+  setOpponentTranscript(opponent.transcript);
+  setIsWaitingForOpponent(false);
+  setShowResults(true);
+}
           }
         }, 1000);
 
