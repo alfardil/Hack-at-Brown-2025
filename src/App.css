@@ -312,6 +312,7 @@ body {
   font-size: 3.5rem;
   margin: 0;
   background: linear-gradient(to bottom, #ffd700 0%, #ff9100 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
@@ -817,9 +818,16 @@ body {
 }
 
 @keyframes errorShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }
 
 /* Mobile Responsiveness */
@@ -828,7 +836,7 @@ body {
     font-size: 1.2rem;
     letter-spacing: 6px;
   }
-  
+
   .join-card {
     min-height: 250px;
   }
