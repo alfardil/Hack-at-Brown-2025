@@ -90,7 +90,7 @@ export class JudgeService {
     }
   }
 
-  static generateFeedback(transcript: string) {
+  static generateFeedback() {
     // Add real-time feedback during the debate
     return `Purrfect point! Keep going...`;
   }

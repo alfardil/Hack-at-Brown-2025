@@ -4,10 +4,10 @@ import GamePage from "./components/GamePage";
 import Lobby from "./components/Lobby";
 import RoomPage from "./components/RoomPage";
 import { chatClient } from "./config/openaiConfig";
-import { GameProvider } from './context/GameContext';
+import { GameProvider } from "./context/GameContext";
 
 const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState(true);
+  const [, setShowSplash] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -49,4 +49,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
