@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import GamePage from "./components/GamePage";
 import Lobby from "./components/Lobby";
 import RoomPage from "./components/RoomPage";
 import SplashScreen from "./components/SplashScreen";
 import { chatClient } from "./config/openaiConfig";
-import GamePage from "./components/GamePage";
 
 const App: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -53,3 +53,6 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+fetch(`$https://hack-at-brown-2025.onrender.com`); // ✅ CORRECT: Uses Render backend
+
