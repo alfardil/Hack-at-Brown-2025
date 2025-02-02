@@ -5,6 +5,8 @@ import { chatClient } from "../config/openaiConfig";
 interface RoomData {
   players: number;
   prompt?: string;
+  playerIds?: string[];
+  gameId?: string;
 }
 
 const RoomPage: React.FC = () => {
@@ -15,12 +17,10 @@ const RoomPage: React.FC = () => {
   const [error, setError] = useState("");
   const [joke, setJoke] = useState<string>("");
 
-  // Countdown-related state
   const [countdown, setCountdown] = useState<number | null>(null);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
 
-  // Fetch room data from the server
   const fetchRoomData = async () => {
     if (!code) return;
     try {
@@ -38,7 +38,6 @@ const RoomPage: React.FC = () => {
     }
   };
 
-  // Fetch a joke from OpenAI for the waiting room
   const fetchJoke = async () => {
     try {
       const response = await chatClient.chat.completions.create({
@@ -55,7 +54,6 @@ const RoomPage: React.FC = () => {
     }
   };
 
-  // Periodically fetch room data and joke
   useEffect(() => {
     fetchRoomData();
     fetchJoke();
@@ -69,8 +67,6 @@ const RoomPage: React.FC = () => {
     };
   }, [code]);
 
-  // When roomData shows at least 2 players and the countdown hasn't started,
-  // start the countdown timer once.
   useEffect(() => {
     if (
       roomData &&
@@ -78,12 +74,11 @@ const RoomPage: React.FC = () => {
       !isCountdownActive &&
       !gameStarted
     ) {
-      setCountdown(10); // e.g., 10 seconds countdown
+      setCountdown(5);
       setIsCountdownActive(true);
     }
   }, [roomData, isCountdownActive, gameStarted]);
 
-  // Countdown timer effect – this effect runs only once after isCountdownActive becomes true.
   useEffect(() => {
     if (!isCountdownActive || countdown === null) return;
 
@@ -93,19 +88,33 @@ const RoomPage: React.FC = () => {
         if (prev <= 1) {
           clearInterval(intervalId);
           setGameStarted(true);
-          // Generate a unique game ID; you could also use a library like uuid.
-          const gameId = `game-${Date.now()}`;
-          // Redirect to the game page.
-          navigate(`/game/${gameId}`);
+
+          if (roomData && roomData.gameId) {
+            navigate(`/game/${roomData.gameId}`);
+          } else if (roomData) {
+            fetch(`/api/lobby/${code}/startGame`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ playerIds: roomData.playerIds }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                navigate(`/game/${data.gameId}`);
+              })
+              .catch((err) => {
+                console.error("Error starting game:", err);
+                setError("Failed to start the game");
+              });
+          }
+
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    // Cleanup the interval on unmount.
     return () => clearInterval(intervalId);
-  }, [isCountdownActive, countdown, navigate]);
+  }, [isCountdownActive, countdown, roomData, code, navigate]);
 
   return (
     <div style={{ textAlign: "center", padding: "2rem" }}>
@@ -122,7 +131,6 @@ const RoomPage: React.FC = () => {
             </>
           ) : (
             <>
-              {/* Only show countdown if game hasn't started */}
               {!gameStarted && (
                 <>
                   <p>Both players have joined!</p>

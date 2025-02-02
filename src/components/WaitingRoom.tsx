@@ -11,9 +11,8 @@ const RoomPage: React.FC = () => {
   const { code } = useParams<{ code: string }>();
   const [roomData, setRoomData] = useState<RoomData | null>(null);
   const [error, setError] = useState("");
-  const [joke, setJoke] = useState<string>(""); // Store joke here
+  const [joke, setJoke] = useState<string>("");
 
-  // Function to fetch room data
   const fetchRoomData = async () => {
     if (!code) return;
 
