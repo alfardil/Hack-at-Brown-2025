@@ -9,4 +9,5 @@ export const GAME_PHASES = {
 export const TURN_DURATION = 60000; // 60 seconds
 export const REBUTTAL_DURATION = 45000; // 45 seconds
 export const CLOSING_DURATION = 30000; // 30 seconds
-export const judgeImage = '/assets/judge-cat.png';  // Make sure this matches your file structure 
+// Using a placeholder cat image from a reliable source
+export const judgeImage = 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=300&h=300&fit=crop'; // Professional cat in suit
