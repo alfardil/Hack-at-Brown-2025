@@ -12,6 +12,10 @@ body {
   background-color: #ffffff;
 }
 
+* {
+  color: white !important; /* Forces text color to white */
+}
+
 .splash-container {
   display: flex;
   flex-direction: column;
