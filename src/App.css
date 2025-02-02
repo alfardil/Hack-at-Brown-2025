@@ -2,6 +2,8 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Cormorant:ital,wght@0,300..700;1,300..700&family=Manrope:wght@200..800&display=swap");
 
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
 html,
 body {
   margin: 0;
@@ -19,7 +21,6 @@ body {
   width: 100vw;
   background-color: black;
   position: relative;
-  font-family: "Chakra Petch";
 }
 
 .splash-content {
@@ -33,11 +34,8 @@ body {
 }
 
 .logo-container {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  position: relative;
+  padding: 2rem;
 }
 
 .logo-content {
@@ -60,7 +58,7 @@ body {
   font-weight: 800;
   line-height: 1;
   text-align: center;
-  font-family: "Chakra Petch";
+  font-family: "Chakra Petch", "Arial", "Verdana", sans-serif;
 }
 
 .games-text {
@@ -122,4 +120,471 @@ body {
 .powered-by,
 .warning-text {
   animation: fadeIn 0.8s ease-out forwards;
+}
+
+:root {
+  --primary-bg: #e6e6f2;
+  --card-bg: rgba(255, 255, 255, 0.15);
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a4a4a;
+  --accent-purple: #9747ff;
+  --button-hover: rgba(255, 255, 255, 0.2);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: black;
+  font-family: "Chakra Petch", monospace;
+}
+
+.game-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #0a0a0f;
+}
+
+.game-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      rgba(151, 71, 255, 0.1) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(151, 71, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  transform: perspective(500px) rotateX(60deg);
+  animation: gridMove 20s linear infinite;
+}
+
+.bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(151, 71, 255, 0.15) 0%,
+    rgba(10, 10, 15, 0.9) 60%
+  );
+}
+
+/* Logo */
+.game-logo {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.logo-badge {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 1rem;
+  color: var(--accent-purple);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+/* Card */
+.game-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(15, 15, 20, 0.95);
+  border: 1px solid rgba(151, 71, 255, 0.3);
+  border-radius: 4px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.menu-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-button::after {
+  content: "";
+  position: absolute;
+  top: var(--y, 50%);
+  left: var(--x, 50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
+}
+
+/* Buttons */
+.menu-button {
+  position: relative;
+  width: 100%;
+  border: 1.5px dashed rgba(151, 71, 255, 0.3);
+  border-radius: 2px;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  padding: 10px 15px; /* Add space inside the button */
+}
+
+.button-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  background: rgba(151, 71, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.button-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--x, 50%) var(--y, 50%),
+    rgba(151, 71, 255, 0.4) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.menu-button:hover .button-glow {
+  opacity: 1;
+}
+
+.menu-button.primary {
+  border-color: var(--accent-purple);
+}
+
+.menu-button.primary .button-content {
+  background: var(--accent-purple);
+}
+
+/* Animations */
+@keyframes gridMove {
+  from {
+    transform: perspective(500px) rotateX(60deg) translateY(0);
+  }
+  to {
+    transform: perspective(500px) rotateX(60deg) translateY(20px);
+  }
+}
+
+@keyframes badgePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* Add hover effect to track mouse position */
+.menu-button {
+  --x: 50%;
+  --y: 50%;
+}
+
+/* Logo Styles */
+.game-logo h1 {
+  font-family: "Press Start 2P", cursive;
+  font-size: 3.5rem;
+  margin: 0;
+  background: linear-gradient(to bottom, #ffd700 0%, #ff9100 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.highlight {
+  color: var(--accent-purple);
+  font-family: "Chakra Petch", monospace;
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+}
+
+.version {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #888;
+  margin-left: 1rem;
+}
+
+.court-line {
+  position: relative;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  letter-spacing: 4px;
+  margin-top: 1rem;
+  text-transform: uppercase;
+  overflow: hidden;
+  color: white;
+
+  /* Soft initial glow */
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.4),
+    0 0 10px rgba(151, 71, 255, 0.5), 0 0 20px rgba(151, 71, 255, 0.7);
+
+  /* Cool pulsating border effect */
+  border-top: 2px solid rgba(151, 71, 255, 0.4);
+  border-bottom: 2px solid rgba(151, 71, 255, 0.4);
+  animation: neonPulse 2.5s infinite alternate;
+}
+
+/* Pulse Animation */
+@keyframes neonPulse {
+  0% {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.4),
+      0 0 10px rgba(151, 71, 255, 0.5), 0 0 20px rgba(151, 71, 255, 0.7);
+    border-top: 2px solid rgba(151, 71, 255, 0.4);
+    border-bottom: 2px solid rgba(151, 71, 255, 0.4);
+  }
+  100% {
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.6),
+      0 0 15px rgba(151, 71, 255, 0.8), 0 0 30px rgba(151, 71, 255, 1);
+    border-top: 2px solid rgba(151, 71, 255, 0.8);
+    border-bottom: 2px solid rgba(151, 71, 255, 0.8);
+  }
+}
+
+/* Card Styles */
+.card-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.menu-title {
+  color: var(--accent-purple);
+  font-family: "Press Start 2P", cursive;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+}
+
+.menu-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.divider-line {
+  height: 1px;
+  width: 80px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--accent-purple),
+    transparent
+  );
+}
+
+.divider-diamond {
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent-purple);
+  transform: rotate(45deg);
+}
+
+/* Menu Options */
+.menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+.button-diamond {
+  width: 6px;
+  height: 6px;
+  background-color: currentColor;
+  transform: rotate(45deg);
+  opacity: 0.8;
+}
+
+.button-text {
+  flex: 1;
+  font-family: "Press Start 2P", cursive;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+/* Card Decorations */
+.card-decoration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.decoration-line {
+  height: 2px;
+  flex: 1;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--accent-purple),
+    transparent
+  );
+}
+
+.decoration-seal {
+  font-size: 2rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Footer */
+.footer {
+  position: absolute;
+  bottom: 2rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.footer-link {
+  color: #888;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-family: "Chakra Petch", monospace;
+  transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+  color: var(--accent-purple);
+}
+
+.footer-separator {
+  color: #444;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px var(--accent-purple);
+  }
+  to {
+    text-shadow: 0 0 20px #fff, 0 0 30px #9747ff, 0 0 40px var(--accent-purple);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Character */
+.character {
+  width: 200px;
+  height: 200px;
+  margin: 2rem 0;
+}
+
+/* Speech Bubble */
+.speech-bubble {
+  position: relative;
+  background: white;
+  border-radius: 1rem;
+  padding: 1rem;
+  margin: 1rem;
+  max-width: 300px;
+}
+
+.speech-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  right: 20px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .game-logo h1 {
+    font-size: 2rem;
+  }
+
+  .logo-badge {
+    width: 48px;
+    height: 48px;
+  }
+
+  .card-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .game-card {
+    padding: 1.5rem;
+    margin: 0 1rem;
+  }
+
+  .character {
+    width: 150px;
+    height: 150px;
+  }
+
+  .menu-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.65rem;
+  }
+
+  .button-icon {
+    font-size: 0.9rem;
+  }
 }
