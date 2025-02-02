@@ -17,7 +17,7 @@ const JoinRoom: React.FC<JoinRoomProps> = ({ onRoomJoined }) => {
     }
 
     try {
-      const response = await fetch("api/lobby/join", {
+      const response = await fetch("https://hack-at-brown-2025.onrender.com/api/lobby/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: joinCode.trim() }),
