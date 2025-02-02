@@ -12,7 +12,7 @@ const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
   useEffect(() => {
     const createRoom = async () => {
       try {
-        const response = await fetch("https://hack-at-brown-2025.onrender.com/", { 
+        const response = await fetch("https://hack-at-brown-2025.onrender.com/api/lobby/create", { 
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
