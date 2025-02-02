@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Lobby from "./components/Lobby";
 import RoomPage from "./components/RoomPage";
 import SplashScreen from "./components/SplashScreen";
+import { chatClient } from './config/openaiConfig';
 
 const App: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -10,9 +11,27 @@ const App: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 2000);
+    }, 4000);
 
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    async function testPrompt() {
+      try {
+        const response = await chatClient.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: 'Tell me a joke!' }],
+          max_tokens: 50,
+        });
+
+        console.log('Response:', response.choices[0].message.content);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+    
+    testPrompt();
   }, []);
 
   return (
