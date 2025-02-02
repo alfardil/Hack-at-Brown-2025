@@ -8,7 +8,7 @@ import { GameState } from "../types/game";
 const RoomPage: React.FC = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { setGameState } = useGame();
+  const { setGameState, playerId } = useGame();
   const [roomData, setRoomData] = useState<any>(null);
   const [error, setError] = useState("");
   const [question] = useState(getRandomQuestion());
@@ -27,11 +27,8 @@ const RoomPage: React.FC = () => {
 
         const data = await response.json();
         setRoomData(data);
-        console.log("Room data:", data);
 
-        // If both players are present, initialize game state
-        if (data.players >= 2 && !data.gameStarted) {
-          console.log("Initializing game...");
+        if (data.players === 2 && !data.gameStarted) {
           const gameState: GameState = {
             playerIds: ["player1", "player2"],
             turn: 0,
@@ -39,8 +36,8 @@ const RoomPage: React.FC = () => {
             prompt: question,
             gamePhase: GAME_PHASES.INTRO,
             positions: {
-              "player1": 'pro',
-              "player2": 'con'
+              player1: 'pro',
+              player2: 'con'
             },
             responses: {
               opening: { pro: null, con: null },
@@ -48,8 +45,6 @@ const RoomPage: React.FC = () => {
               closing: { pro: null, con: null }
             }
           };
-
-          console.log("Game state:", gameState);
 
           const startGameResponse = await fetch(
             `https://hack-at-brown-2025.onrender.com/api/lobby/${code}/startGame`,
@@ -62,13 +57,8 @@ const RoomPage: React.FC = () => {
 
           if (startGameResponse.ok) {
             const { gameId } = await startGameResponse.json();
-            console.log("Game created with ID:", gameId);
             setGameState(gameState);
             navigate(`/game/${gameId}`);
-          } else {
-            const errorText = await startGameResponse.text();
-            console.error("Failed to start game:", errorText);
-            setError(`Failed to start game: ${errorText}`);
           }
         }
       } catch (err) {
@@ -81,7 +71,7 @@ const RoomPage: React.FC = () => {
     fetchRoomData();
 
     return () => clearInterval(interval);
-  }, [code, navigate, setGameState, question]);
+  }, [code, navigate, setGameState, playerId, question]);
 
   return (
     <div className="game-container">

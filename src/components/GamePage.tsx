@@ -23,7 +23,7 @@ const JudgeIntro: React.FC<{ prompt: string | undefined, position: Position, onR
           <p>*adjusts whiskers* Meowvelous to meet you! I'm Judge Pawsworth, and I'll be purr-siding over this debate.</p>
           <p>Today's burning question is:</p>
           <div className="debate-question">{prompt || "Loading question..."}</div>
-          <p>You will be arguing the <strong>{position.toUpperCase()}</strong> position.</p>
+          <p>You will be arguing the <strong>{position === 'pro' ? 'FOR' : 'AGAINST'}</strong> position.</p>
           <p>Remember, this is a formal purr-ceeding! Let's keep it clawsome and respectful.</p>
         </div>
         <button onClick={onReady} className="menu-button primary">
@@ -40,76 +40,26 @@ const JudgeIntro: React.FC<{ prompt: string | undefined, position: Position, onR
 const GamePage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { gameState, setGameState } = useGame();
+  const { gameState, setGameState, playerId } = useGame();
   const [transcript, setTranscript] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState(TURN_DURATION / 1000);
   const [showIntro, setShowIntro] = useState(true);
-  const [judgment, setJudgment] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
-  const [phase, setPhase] = useState<'intro' | 'opening' | 'rebuttal' | 'closing' | 'judgment'>('intro');
-  const [opponentResponse, setOpponentResponse] = useState<string | null>(null);
-
-  const getPhaseTime = () => {
-    switch (phase) {
-      case 'opening': return 60;
-      case 'rebuttal': return 45;
-      case 'closing': return 30;
-      default: return 60;
-    }
-  };
+  const [myScore, setMyScore] = useState<number>(0);
+  const [opponentScore, setOpponentScore] = useState<number>(0);
+  const [opponentTranscript, setOpponentTranscript] = useState<string>("");
+  const [showResults, setShowResults] = useState(false);
+  const [isWaitingForOpponent, setIsWaitingForOpponent] = useState(false);
+  const [feedback, setFeedback] = useState<string>("");
+  const [strengths, setStrengths] = useState<string[]>([]);
+  const [improvements, setImprovements] = useState<string[]>([]);
 
   const getMyPosition = (): Position => {
-    if (!gameState?.positions || !gameState.playerIds[0]) return 'pro';
-    return gameState.positions[gameState.playerIds[0]];
+    if (!gameState?.positions) return 'pro';
+    return gameState.positions[playerId] || 'pro';
   };
-
-  useEffect(() => {
-    if (!gameId) return;
-
-    const fetchGameState = async () => {
-      try {
-        const res = await fetch(`https://hack-at-brown-2025.onrender.com/api/game/${gameId}/gameState`);
-        if (res.ok) {
-          const data = await res.json();
-          setGameState(data);
-
-          // Check for opponent's response
-          if (data.responses) {
-            const myPos = getMyPosition();
-            const oppositePos = myPos === 'pro' ? 'con' : 'pro';
-            const currentPhaseResponses = data.responses[phase];
-            if (currentPhaseResponses && currentPhaseResponses[oppositePos]) {
-              setOpponentResponse(currentPhaseResponses[oppositePos]);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching game state:", error);
-      }
-    };
-
-    fetchGameState();
-    const interval = setInterval(fetchGameState, 1000);
-    return () => clearInterval(interval);
-  }, [gameId, setGameState, phase]);
-
-  useEffect(() => {
-    if (isRecording) {
-      const interval = setInterval(() => {
-        setTimer((prevTimer) => {
-          if (prevTimer <= 0) {
-            stopRecording();
-            return 0;
-          }
-          return prevTimer - 1;
-        });
-      }, 1000);
-      setTimerInterval(interval);
-      return () => clearInterval(interval);
-    }
-  }, [isRecording]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -128,7 +78,6 @@ const GamePage: React.FC = () => {
         .map((result: any) => result[0])
         .map(result => result.transcript)
         .join('');
-      
       setTranscript(transcript);
     };
 
@@ -148,7 +97,7 @@ const GamePage: React.FC = () => {
     if (recognitionRef.current && !isRecording) {
       setTranscript("");
       setIsRecording(true);
-      setTimer(getPhaseTime());
+      setTimer(60);
       recognitionRef.current.start();
     }
   };
@@ -157,61 +106,143 @@ const GamePage: React.FC = () => {
     if (recognitionRef.current && isRecording) {
       recognitionRef.current.stop();
       setIsRecording(false);
-      if (timerInterval) {
-        clearInterval(timerInterval);
-      }
+      if (timerInterval) clearInterval(timerInterval);
+
+      setIsWaitingForOpponent(true);
 
       try {
-        const myPosition = getMyPosition();
-        const response = await fetch(`https://hack-at-brown-2025.onrender.com/api/game/${gameId}/addResponse`, {
+        let score: number;
+        let feedback: string;
+        let strengths: string[];
+        let improvements: string[];
+
+        try {
+          const gradeResponse = await fetch('https://hack-at-brown-2025.onrender.com/api/debate/evaluate', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              argument: transcript,
+              topic: gameState?.prompt,
+              position: getMyPosition(),
+              evaluationType: 'debate',
+              criteria: {
+                relevance: "How well does the argument address the topic?",
+                reasoning: "How logical and well-structured is the argument?",
+                evidence: "How well does it use examples or evidence?",
+                persuasiveness: "How convincing is the overall argument?",
+                stance: `How well does it argue the ${getMyPosition()} position?`
+              }
+            })
+          });
+
+          if (gradeResponse.ok) {
+            const gradeData = await gradeResponse.json();
+            score = Math.round((gradeData.score || 0.75) * 100);
+            feedback = gradeData.feedback || "Judge Pawsworth is impressed with your argument!";
+            strengths = gradeData.strengths || ["Clear presentation", "Good effort in addressing the topic"];
+            improvements = gradeData.improvements || ["Consider adding more specific examples"];
+          } else {
+            throw new Error('Grading failed');
+          }
+        } catch (error) {
+          console.warn('Grading API failed, using default score');
+          score = 75;
+          feedback = "Judge Pawsworth is impressed with your argument!";
+          strengths = ["Clear presentation", "Good effort in addressing the topic"];
+          improvements = ["Consider adding more specific examples"];
+        }
+
+        setMyScore(score);
+        setFeedback(feedback);
+        setStrengths(strengths);
+        setImprovements(improvements);
+
+        await fetch(`https://hack-at-brown-2025.onrender.com/api/game/${gameId}/gameState`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            transcript,
-            phase,
-            position: myPosition
+          body: JSON.stringify({
+            playerId,
+            response: {
+              transcript,
+              score,
+              feedback,
+              strengths,
+              improvements
+            }
           })
         });
 
-        if (!response.ok) {
-          console.error("Failed to add response:", await response.text());
-          return;
-        }
-
-        // Check if both players have submitted for this phase
-        const gameStateRes = await fetch(`https://hack-at-brown-2025.onrender.com/api/game/${gameId}/gameState`);
-        const updatedState = await gameStateRes.json();
-        const currentPhaseResponses = updatedState.responses[phase];
-        
-        if (currentPhaseResponses?.pro && currentPhaseResponses?.con) {
-          // Both players have submitted, move to next phase
-          switch (phase) {
-            case 'opening':
-              setPhase('rebuttal');
-              break;
-            case 'rebuttal':
-              setPhase('closing');
-              break;
-            case 'closing':
-              const result = await fetch(`https://hack-at-brown-2025.onrender.com/api/game/${gameId}/judge`, {
-                method: 'POST'
-              });
-              if (result.ok) {
-                const judgmentText = await result.json();
-                setJudgment(judgmentText);
-                setPhase('judgment');
-              }
-              break;
+        const checkOpponent = setInterval(async () => {
+          const stateRes = await fetch(`https://hack-at-brown-2025.onrender.com/api/game/${gameId}/gameState`);
+          if (!stateRes.ok) return;
+          
+          const gameData = await stateRes.json();
+          if (gameData.responses) {
+            const opponent = Object.values(gameData.responses).find(
+              (r: any) => r.playerId !== playerId
+            );
+            if (opponent) {
+              clearInterval(checkOpponent);
+              setOpponentScore(opponent.score);
+              setOpponentTranscript(opponent.transcript);
+              setIsWaitingForOpponent(false);
+              setShowResults(true);
+            }
           }
-        }
+        }, 1000);
+
+        setTimeout(() => {
+          clearInterval(checkOpponent);
+          if (!showResults) {
+            setIsWaitingForOpponent(false);
+            setShowResults(true);
+          }
+        }, 30000);
+
       } catch (error) {
-        console.error("Error submitting response:", error);
+        console.error("Error:", error);
+        setIsWaitingForOpponent(false);
+        setShowResults(true);
       }
     }
   };
 
+  useEffect(() => {
+    if (isRecording) {
+      const interval = setInterval(() => {
+        setTimer((prevTimer) => {
+          if (prevTimer <= 0) {
+            stopRecording();
+            return 0;
+          }
+          return prevTimer - 1;
+        });
+      }, 1000);
+      setTimerInterval(interval);
+      return () => clearInterval(interval);
+    }
+  }, [isRecording]);
+
   if (!gameId || !gameState) {
     return <div>Loading game...</div>;
+  }
+
+  if (showResults) {
+    return (
+      <Results 
+        myScore={myScore}
+        opponentScore={opponentScore}
+        myTranscript={transcript}
+        opponentTranscript={opponentTranscript}
+        feedback={feedback}
+        strengths={strengths}
+        improvements={improvements}
+        onPlayAgain={() => navigate('/')}
+      />
+    );
   }
 
   if (showIntro) {
@@ -224,17 +255,10 @@ const GamePage: React.FC = () => {
         <JudgeIntro 
           prompt={gameState.prompt}
           position={getMyPosition()}
-          onReady={() => {
-            setShowIntro(false);
-            setPhase('opening');
-          }}
+          onReady={() => setShowIntro(false)}
         />
       </div>
     );
-  }
-
-  if (phase === 'judgment' && judgment) {
-    return <Results judgment={judgment} onPlayAgain={() => navigate('/')} />;
   }
 
   return (
@@ -246,8 +270,7 @@ const GamePage: React.FC = () => {
 
       <div className="game-card">
         <div className="card-header">
-          <div className="menu-title">COURT IN SESSION</div>
-          <div className="phase-indicator">{phase.toUpperCase()}</div>
+          <div className="menu-title">MAKE YOUR CASE</div>
           <div className="menu-divider">
             <div className="divider-line"></div>
             <div className="divider-diamond"></div>
@@ -256,56 +279,49 @@ const GamePage: React.FC = () => {
         </div>
 
         <div className="game-content">
-          {gameState.prompt && (
+          {gameState?.prompt && (
             <div className="prompt-section">
               <div className="prompt-title">DEBATE TOPIC</div>
               <div className="prompt-content">{gameState.prompt}</div>
               <div className="position-indicator">
-                Your position: {getMyPosition().toUpperCase()}
+                Your position: {getMyPosition() === 'pro' ? 'FOR' : 'AGAINST'}
               </div>
             </div>
           )}
 
-          {opponentResponse && phase !== 'opening' && (
-            <div className="opponent-response">
-              <div className="response-title">Opponent's Previous Argument</div>
-              <div className="response-content">{opponentResponse}</div>
+          {isWaitingForOpponent ? (
+            <div className="waiting-message">
+              Waiting for opponent to finish their argument...
+            </div>
+          ) : (
+            <div className="status-display">
+              <div className="status-item">
+                <div className="status-label">TIME REMAINING</div>
+                <div className="status-value">{timer}s</div>
+              </div>
+              {!isRecording ? (
+                <button onClick={startRecording} className="menu-button primary">
+                  <div className="button-content">
+                    <div className="button-diamond"></div>
+                    <span className="button-text">START SPEAKING</span>
+                  </div>
+                </button>
+              ) : (
+                <button onClick={stopRecording} className="menu-button secondary">
+                  <div className="button-content">
+                    <div className="button-diamond"></div>
+                    <span className="button-text">STOP RECORDING</span>
+                  </div>
+                </button>
+              )}
+              {transcript && (
+                <div className="transcript-box">
+                  <div className="transcript-title">YOUR ARGUMENT</div>
+                  <div className="transcript-content">{transcript}</div>
+                </div>
+              )}
             </div>
           )}
-
-          <div className="phase-instructions">
-            {phase === 'opening' && 'Present your main argument (60 seconds)'}
-            {phase === 'rebuttal' && 'Address your opponent\'s points (45 seconds)'}
-            {phase === 'closing' && 'Make your final statement (30 seconds)'}
-          </div>
-
-          <div className="status-display">
-            <div className="status-item">
-              <div className="status-label">YOUR TURN</div>
-              <div className="status-value">{timer}s</div>
-            </div>
-            {!isRecording ? (
-              <button onClick={startRecording} className="menu-button primary">
-                <div className="button-content">
-                  <div className="button-diamond"></div>
-                  <span className="button-text">START SPEAKING</span>
-                </div>
-              </button>
-            ) : (
-              <button onClick={stopRecording} className="menu-button secondary">
-                <div className="button-content">
-                  <div className="button-diamond"></div>
-                  <span className="button-text">STOP RECORDING</span>
-                </div>
-              </button>
-            )}
-            {transcript && (
-              <div className="transcript-box">
-                <div className="transcript-title">YOUR RESPONSE</div>
-                <div className="transcript-content">{transcript}</div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
