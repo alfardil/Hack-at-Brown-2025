@@ -54,5 +54,19 @@ const App: React.FC = () => {
 
 export default App;
 
-fetch(`$https://hack-at-brown-2025.onrender.com`); // ✅ CORRECT: Uses Render backend
+useEffect(() => {
+  async function checkBackend() {
+    try {
+      const response = await fetch("https://hack-at-brown-2025.onrender.com/api/lobby/test");
+      if (!response.ok) {
+        throw new Error(`Backend returned ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("✅ Backend is reachable:", data);
+    } catch (error) {
+      console.error("❌ Error connecting to backend:", error);
+    }
+  }
 
+  checkBackend();
+}, []);
