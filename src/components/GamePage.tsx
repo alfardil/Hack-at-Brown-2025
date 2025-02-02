@@ -1,39 +1,42 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { chatClient } from "../config/openaiConfig";
 
-const GamePage: React.FC = () => {
-  const { gameId } = useParams<{ gameId: string }>();
-
-  if (!gameId) {
-    return <div>Error: Game ID is missing from the URL.</div>;
-  }
+const GamePage: React.FC<{ userId: string }> = ({ userId }) => {
+  const { gameId } = useParams<{ gameId: string }>(); // ✅ Get gameId from URL
 
   const [gameState, setGameState] = useState<any>(null);
-  const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [timer, setTimer] = useState(30);
+  const [isRecording, setIsRecording] = useState(false);
+  const [timer, setTimer] = useState(0);
   const recognitionRef = useRef<any>(null);
-  const timerIdRef = useRef<NodeJS.Timeout | null>(null);
-  const userId = localStorage.getItem("userId") || `user-${Date.now()}`;
-
-  const fetchGameState = async () => {
-    try {
-      const res = await fetch(`/api/game/${gameId}/gameState`);
-      if (res.ok) {
-        const state = await res.json();
-        setGameState(state);
-      } else {
-        console.error("Failed to fetch game state, status:", res.status);
-      }
-    } catch (err) {
-      console.error("Error fetching game state:", err);
-    }
-  };
 
   useEffect(() => {
+    if (!gameId) {
+      console.error("Game ID is missing.");
+      return;
+    }
+
+    const fetchGameState = async () => {
+      try {
+        const res = await fetch(`/api/game/${gameId}/gameState`);
+        if (res.ok) {
+          const data = await res.json();
+          setGameState(data);
+
+          // Calculate remaining time
+          const timeRemaining =
+            new Date(data.turnDeadline).getTime() - new Date().getTime();
+          setTimer(Math.max(Math.floor(timeRemaining / 1000), 0));
+        } else {
+          console.error("Failed to fetch game state, status:", res.status);
+        }
+      } catch (error) {
+        console.error("Error fetching game state:", error);
+      }
+    };
+
     fetchGameState();
-    const interval = setInterval(fetchGameState, 3000);
+    const interval = setInterval(fetchGameState, 1000); // Poll every second
     return () => clearInterval(interval);
   }, [gameId]);
 
@@ -41,23 +44,26 @@ const GamePage: React.FC = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
-      console.warn("Speech recognition is not supported in this browser.");
+      console.warn("Speech recognition not supported.");
       return;
     }
+
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
     recognition.interimResults = false;
+
     recognition.onresult = (event: any) => {
       const result = event.results[0][0].transcript;
       setTranscript(result);
       stopRecording();
-      submitResponse(result);
     };
-    recognition.onerror = (error: any) => {
-      console.error("Speech recognition error:", error);
+
+    recognition.onerror = () => {
       stopRecording();
     };
+
     recognitionRef.current = recognition;
   }, []);
 
@@ -65,113 +71,66 @@ const GamePage: React.FC = () => {
     if (recognitionRef.current) {
       setTranscript("");
       setIsRecording(true);
-      setTimer(30);
       recognitionRef.current.start();
-      timerIdRef.current = setInterval(() => {
-        setTimer((prev) => {
-          if (prev <= 1) {
-            if (timerIdRef.current) {
-              clearInterval(timerIdRef.current);
-              timerIdRef.current = null;
-            }
-            stopRecording();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
     }
   };
 
-  const stopRecording = () => {
-    if (timerIdRef.current) {
-      clearInterval(timerIdRef.current);
-      timerIdRef.current = null;
-    }
+  const stopRecording = async () => {
     if (recognitionRef.current) {
-      setIsRecording(false);
       recognitionRef.current.stop();
     }
-    endTurn();
-  };
+    setIsRecording(false);
 
-  const submitResponse = async (text: string) => {
+    if (!gameId) return; // Prevent making requests if gameId is missing
+
+    // Send transcript to backend
     try {
-      const aiRes = await chatClient.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "Rate this answer on a scale of 1 to 10:",
-          },
-          { role: "user", content: text },
-        ],
-        max_tokens: 50,
-      });
-      const rating = aiRes.choices[0]?.message?.content || "Unrated";
       await fetch(`/api/game/${gameId}/addResponse`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerId: userId, transcript: text, rating }),
+        body: JSON.stringify({ playerId: userId, transcript }),
       });
-      setTranscript("");
+
+      // Trigger turn transition
+      await fetch(`/api/game/${gameId}/nextTurn`, { method: "POST" });
     } catch (error) {
       console.error("Error submitting response:", error);
     }
   };
 
-  const endTurn = async () => {
-    try {
-      await fetch(`/api/game/${gameId}/endTurn`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      fetchGameState();
-    } catch (error) {
-      console.error("Error ending turn:", error);
-    }
-  };
-
-  if (!gameState) return <div>Loading game...</div>;
-
-  if (gameState.ended) {
-    return (
-      <div>
-        <h1>Game Over</h1>
-        <p>
-          <strong>Game ID:</strong> {gameId}
-        </p>
-        <ul>
-          {gameState.responses?.map((resp: any, index: number) => (
-            <li key={index}>
-              <strong>{resp.playerId}:</strong> {resp.transcript} -{" "}
-              {resp.rating}
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
+  if (!gameId) {
+    return <div>Error: Game ID is missing.</div>;
   }
 
-  const isMyTurn = gameState?.playerIds?.[gameState?.turn || 0] === userId;
+  if (!gameState) {
+    return <div>Loading game...</div>;
+  }
+
+  const isMyTurn = gameState?.playerIds[gameState?.turn || 0] === userId;
 
   return (
-    <div>
-      <h1>Game Page</h1>
+    <div className="p-4">
+      <h1 className="text-xl font-bold">Game Page</h1>
       <p>
         <strong>Game ID:</strong> {gameId}
       </p>
       {isMyTurn ? (
         <div>
-          <p>Your turn! You have {timer} seconds.</p>
-          <button onClick={startRecording} disabled={isRecording}>
+          <p className="text-green-500">Your turn! You have {timer} seconds.</p>
+          <button
+            onClick={startRecording}
+            disabled={isRecording}
+            className="bg-blue-500 text-white px-4 py-2 mt-2"
+          >
             {isRecording ? "Recording..." : "Start Recording"}
           </button>
-          <p>{transcript}</p>
+          <p className="mt-2">{transcript}</p>
         </div>
       ) : (
         <div>
-          <p>Waiting for the other player to respond...</p>
+          <p className="text-red-500">
+            Waiting for the other player to respond...
+          </p>
         </div>
       )}
     </div>
