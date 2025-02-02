@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { chatClient } from "../config/openaiConfig";
 
 interface RoomData {
   players: number;
@@ -10,7 +11,9 @@ const RoomPage: React.FC = () => {
   const { code } = useParams<{ code: string }>();
   const [roomData, setRoomData] = useState<RoomData | null>(null);
   const [error, setError] = useState("");
+  const [joke, setJoke] = useState<string>(""); // Store joke here
 
+  // Function to fetch room data
   const fetchRoomData = async () => {
     if (!code) return;
 
@@ -29,13 +32,39 @@ const RoomPage: React.FC = () => {
     }
   };
 
+  const fetchJoke = async () => {
+    try {
+      const response = await chatClient.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: "Tell me a short joke!" }],
+        max_tokens: 50,
+      });
+
+      if (response.choices && response.choices[0].message.content) {
+        setJoke(response.choices[0].message.content);
+      }
+    } catch (error) {
+      console.error("Error fetching joke:", error);
+      setJoke("Couldn't fetch a joke. Try again later!");
+    }
+  };
+
+  const [refresh, setRefresh] = useState(0);
+
   useEffect(() => {
-    fetchRoomData(); // Initial fetch
+    fetchRoomData();
+    fetchJoke();
 
-    // Start interval to fetch data every 3 seconds
-    const interval = setInterval(fetchRoomData, 3000);
+    const roomInterval = setInterval(fetchRoomData, 3000);
+    const jokeInterval = setInterval(() => {
+      fetchJoke();
+      setRefresh((prev) => prev + 1);
+    }, 10000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(roomInterval);
+      clearInterval(jokeInterval);
+    };
   }, [code]);
 
   return (
@@ -47,7 +76,11 @@ const RoomPage: React.FC = () => {
         <>
           <p>Players: {roomData.players}</p>
           {roomData.players < 2 ? (
-            <p>Waiting for a second player to join...</p>
+            <>
+              <p>Waiting for a second player to join...</p>
+              <h3>🤖 AI Joke:</h3>
+              <p>{joke || "Loading a joke..."}</p>
+            </>
           ) : (
             <p>Both players have joined!</p>
           )}
